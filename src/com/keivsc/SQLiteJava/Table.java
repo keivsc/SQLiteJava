@@ -1,9 +1,11 @@
-package com.keivsc.SQLiteJava.Database;
+package com.keivsc.SQLiteJava;
 
 import java.sql.*;
 import java.util.*;
-import org.json.JSONObject;
 
+/**
+ * Columns in the current table
+ */
 class Columns{
     private final List<Map<String, Object>> fieldValues = new ArrayList<>();
     private static final Map<String, Class<?>> types = new HashMap<>();
@@ -62,24 +64,41 @@ public class Table {
         this.Column = new Columns(items);
     };
 
-    // This Function runs code directly to the database with no client-side parsing or reformatting, use at your own risk
+    /**
+     * Runs a SQL Command directly with no formatting
+     * @param command String | SQL Command following SQLite Formatting
+     * @throws SQLException
+     */
     public void runCommand(String command) throws SQLException {
         Statement stmt = conn.createStatement();
         stmt.executeUpdate(command);
     }
 
+    /**
+     * Runs a SQL Query
+     * @param query String | SQL Query following the SQLite Formatting
+     * @return <code>java.sql.ResultSet</code>
+     * @throws SQLException
+     */
     public ResultSet runQuery(String query) throws SQLException {
         Statement stmt = conn.createStatement();
         return stmt.executeQuery(query);
     }
 
 
-
-    //DANGEROUS CODE CAREFUL, CLEARS ALL ITEMS IN A TABLE
+    /**
+     * Clears the entire table, This is dangerous and should almost never be used
+     * @throws SQLException
+     */
     public void ClearTable() throws SQLException{
         this.runCommand("DELETE * FROM " + Name);
     }
 
+    /**
+     * Add item to the current table
+     * @param items Value
+     * @throws SQLException
+     */
     public void addItem(Value items) throws SQLException {
         for (var entry : items.entrySet()) {
             var key = entry.getKey();
@@ -104,6 +123,12 @@ public class Table {
         this.runCommand(query.toString());
     }
 
+    /**
+     * Edit an item in the current table, if identifer found more than one item, the operation will not go through (SQLException is thrown)
+     * @param Identifier String | SQLite WHERE <code>{identifier}</code>
+     * @param items Value
+     * @throws SQLException
+     */
     public void editItem(String Identifier, Value items) throws SQLException {
         for (var entry : items.entrySet()) {
             var key = entry.getKey();
@@ -112,17 +137,28 @@ public class Table {
                 throw new SQLException("Item '" + key + "' is in the wrong Type");
             }
         }
-        StringBuilder query = new StringBuilder("INSERT INTO " + Name + "VALUES(");
-        for (int i = 0; i < this.Column.size(); i++){
-            query.append("?");
-            if (i != this.Column.size() - 1){
-                query.append(",");
+        List<Value> oldItem = this.getItems(Identifier);
+        if (oldItem.size() > 1){
+            throw new SQLException("Multiple items with the same identifier '" + Identifier + "'");
+        }else {
+            StringBuilder query = new StringBuilder("INSERT INTO " + Name + "VALUES(");
+            for (int i = 0; i < this.Column.size(); i++) {
+                query.append("?");
+                if (i != this.Column.size() - 1) {
+                    query.append(",");
+                }
             }
+            query.append("WHERE " + Identifier + ")");
+            this.runCommand(query.toString());
         }
-        query.append("WHERE "+Identifier+")");
-        this.runCommand(query.toString());
     }
 
+    /**
+     * Get a list of items following the identifer, Identifier can be any length
+     * @param identifier String | SQLite WHERE <code>{identifier}</code>
+     * @return <code>List&lt;Value&gt;</code> Returns a list of Values
+     * @throws SQLException
+     */
     public List<Value> getItems(String identifier) throws SQLException {
         StringBuilder query = new StringBuilder("SELECT * ");
         query.append(" FROM ").append(Name).append(" WHERE "+identifier);
@@ -148,6 +184,11 @@ public class Table {
         return fieldValues;
     };
 
+    /**
+     * Get all items from the current table
+     * @return <code>List&lt;Value&gt;</code> Returns a list of Values
+     * @throws SQLException
+     */
     public List<Value> getAllItems() throws SQLException {
         StringBuilder query = new StringBuilder("SELECT * ");
         query.append(" FROM ").append(Name);
@@ -173,6 +214,13 @@ public class Table {
         return fieldValues;
     }
 
+    /**
+     * Get a list of values from items following the identifer, Identifier can be any length
+     * @param identifier String | SQLite WHERE <code>{identifier}</code>
+     * @param values String[] | The values you want to get
+     * @return <code>List&lt;Value&gt;</code> Returns a list of Values
+     * @throws SQLException
+     */
     public List<Value> getValues(String identifier, String[] values) throws SQLException {
         StringBuilder query = new StringBuilder("SELECT ");
         for (int i=0; i < values.length; i++) {
@@ -204,11 +252,21 @@ public class Table {
         return fieldValues;
     }
 
+    /**
+     * Delete item from the table, if more than one item is found, all items will be deleted
+     * @param identfier String | SQLite WHERE <code>{identifier}</code>
+     * @throws SQLException
+     */
     public void deleteItem(String identfier) throws SQLException{
         this.runCommand("DELETE FROM " + Name + " WHERE " + identfier);
     }
 
-    public JSONObject toJSON() throws SQLException {
+    /**
+     * Convert the current table to a JSONObject
+     * @return <code>JSONObject</code>
+     * @throws SQLException
+     */
+    public JSONObj toJSON() throws SQLException {
         List<Value> allItems = this.getAllItems();
         Map<String, Object> table = new HashMap<>();
         List<Object> itemValues = new ArrayList<>();
@@ -216,7 +274,7 @@ public class Table {
             itemValues.add(item.data);
         }
         table.put(this.Name, itemValues);
-        return new JSONObject(table);
+        return new JSONObj(table);
     }
 
 }

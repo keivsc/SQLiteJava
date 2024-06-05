@@ -1,4 +1,4 @@
-package com.keivsc.SQLiteJava.Database;
+package com.keivsc.SQLiteJava;
 
 import java.sql.SQLException;
 

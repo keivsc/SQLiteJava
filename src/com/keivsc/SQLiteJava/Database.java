@@ -1,6 +1,5 @@
-package com.keivsc.SQLiteJava.Database;
+package com.keivsc.SQLiteJava;
 
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +26,15 @@ public class Database {
     private Connection conn;
     private boolean debug;
     private static final Logger logger = LoggerFactory.getLogger(Database.class);
+
+    /**Get every column name, type and other attributes from a table
+     *
+     * @param tableName String | The table's name
+     * @return <code>List&lt;Map&lt;String,Object&gt;&gt;</code> List of each column as a map
+     * @throws Errors.DatabaseException
+     *
+     *
+     */
 
     private List<Map<String, Object>> getTableInfo(String tableName) throws Errors.DatabaseException {
         try{
@@ -55,7 +63,14 @@ public class Database {
 
     }
 
-    public Database connectDatabase(String filename) throws Errors.DatabaseException {
+
+    /** Initialize the Database / Connects to the database file
+     *
+     * @param filename String | Name of the database file you are accessing ie "Example.db"
+     * @return <code>Database</code> | Database class
+     * @throws Errors.DatabaseException
+     */
+    public Database(String filename) throws Errors.DatabaseException {
         String dbUrl = "jdbc:sqlite:" + filename;
 
         try {
@@ -69,7 +84,6 @@ public class Database {
             Connection conn = DriverManager.getConnection(dbUrl);
             if (conn != null) {
                 this.conn = conn;
-                return this;
             }
         } catch (SQLException e) {
             logger.error("Could not connect to database.", e);
@@ -78,14 +92,21 @@ public class Database {
         throw new Errors.DatabaseException("Could not connect to database.");
     }
 
-    public Database(boolean debug) {
-        this.debug = debug;
-    }
-
+    /**
+     * Ends the database connection / use this when updating the database file.
+     * @throws SQLException
+     */
     public void close() throws SQLException {
         this.conn.close();
     }
 
+    /**
+     * Create a table in the current database
+     * @param tableName String | The name of the table
+     * @param items String[] | The name and types of the columns
+     * @return Table | Returns a Table Class
+     * @throws Errors.TableException
+     */
     public Table CreateTable(String tableName, String[] items) throws Errors.TableException {
         StringBuilder query = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (");
         for (int i = 0; i < items.length; i++) {
@@ -104,6 +125,11 @@ public class Database {
         }
     }
 
+    /**
+     * Connect to an existing Table
+     * @param tableName String | The name of the table
+     * @return Table / null | Table class, Returns null if table is not found
+     */
     public Table ConnectTable(String tableName) {
         try{
             List<Map<String, Object>> tableInfo = getTableInfo(tableName);
@@ -116,8 +142,13 @@ public class Database {
         }
     }
 
-    public JSONObject toJSON() throws SQLException {
-        JSONObject json = new JSONObject();
+    /**
+     * Converts the current database and all its tables to json format
+     * @return <code>JSONObject</code>
+     * @throws SQLException
+     */
+    public JSONObj toJSON() throws SQLException {
+        JSONObj json = new JSONObj();
         Statement stmt = this.conn.createStatement();
         ResultSet rs = stmt.executeQuery("SELECT name FROM sqlite_master WHERE type='table'");
         while (rs.next()) {
