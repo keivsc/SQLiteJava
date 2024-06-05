@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="googlecode.slf4j.maven.plugin.log" type="repository">
+    <properties maven-id="com.googlecode.slf4j-maven-plugin-log:slf4j-maven-plugin-log:1.0.0" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/googlecode/slf4j-maven-plugin-log/slf4j-maven-plugin-log/1.0.0/slf4j-maven-plugin-log-1.0.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/apache/maven/maven-plugin-api/2.2.1/maven-plugin-api-2.2.1.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
