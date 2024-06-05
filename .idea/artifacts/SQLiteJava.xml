@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
   <artifact type="jar" name="SQLiteJava">
-    <output-path>$PROJECT_DIR$/out/artifacts/SQLiteJava</output-path>
+    <output-path>$PROJECT_DIR$/../..</output-path>
     <root id="archive" name="SQLite Java.jar">
       <element id="module-output" name="SQLite Java" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/googlecode/slf4j-maven-plugin-log/slf4j-maven-plugin-log/1.0.0/slf4j-maven-plugin-log-1.0.0.jar" path-in-jar="/" />

@@ -17,7 +17,7 @@ public class ExampleMain {
             JSONObject databaseJson = db.toJSON();
 
             //Connecting to tables
-            Table albumTable = db.ConnectTable("Album");
+            Table albumTable = db.connectTable("Album");
 
             //Creating a Table
             String[] Columns = {
@@ -25,7 +25,7 @@ public class ExampleMain {
                     "Name TEXT NOT NULL",
                     "AGE INTEGER NOT NULL",
             };
-            Table exampleTable = db.CreateTable("Example", Columns);
+            Table exampleTable = db.createTable("Example", Columns);
             if (exampleTable == null) {
                 System.out.println("Table not found");
                 db.close();

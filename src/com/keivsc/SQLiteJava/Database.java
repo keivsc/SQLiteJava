@@ -107,7 +107,7 @@ public class Database {
      * @return Table | Returns a Table Class
      * @throws Errors.TableException
      */
-    public Table CreateTable(String tableName, String[] items) throws Errors.TableException {
+    public Table createTable(String tableName, String[] items) throws Errors.TableException {
         StringBuilder query = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (");
         for (int i = 0; i < items.length; i++) {
             query.append(items[i]);
@@ -130,7 +130,7 @@ public class Database {
      * @param tableName String | The name of the table
      * @return Table / null | Table class, Returns null if table is not found
      */
-    public Table ConnectTable(String tableName) {
+    public Table connectTable(String tableName) {
         try{
             List<Map<String, Object>> tableInfo = getTableInfo(tableName);
             if (tableInfo.isEmpty()) {

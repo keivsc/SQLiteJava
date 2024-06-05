@@ -90,7 +90,7 @@ public class Table {
      * Clears the entire table, This is dangerous and should almost never be used
      * @throws SQLException
      */
-    public void ClearTable() throws SQLException{
+    public void clearTable() throws SQLException{
         this.runCommand("DELETE * FROM " + Name);
     }
 
