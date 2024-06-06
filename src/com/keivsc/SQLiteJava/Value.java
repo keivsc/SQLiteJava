@@ -3,9 +3,17 @@ package com.keivsc.SQLiteJava;
 import java.util.*;
 
 /**
- * Create a new Value / Initialize Exisiting Value
+ * Value Class
  */
 public class Value {
+
+    /**
+     * Create a new Value
+     */
+    public Value(){
+
+    }
+
     /**
      * The name of the columns in the value
      */
@@ -15,6 +23,10 @@ public class Value {
      */
     public final Map<String, Object> data = new HashMap<>();
 
+    /**
+     * Builds from SQL items
+     * @param items | List of items
+     */
     public void ValuesInit(List<Map<String, Object>> items){
         for (Map<String, Object> item : items) {
             for (Map.Entry<String, Object> entry : item.entrySet()) {
@@ -24,14 +36,6 @@ public class Value {
             }
         }
     };
-
-    /**
-     * Create a new Value
-     * @return <code>Value</code>
-     */
-    public Value Value(){
-        return this;
-    }
 
     /**
      * Add item to the current value, this also overrides existing data with the same keys
@@ -54,7 +58,7 @@ public class Value {
     /**
      * Get the Value of a column
      * @param key String | Name of the column
-     * @return
+     * @return {@code Object}
      */
     public Object get(String key){
         return this.data.get(key);
@@ -71,10 +75,19 @@ public class Value {
         return this.data.size();
     }
 
+    /**
+     * Returns the entrySet of the value
+     * @return <code>Set&lt;Map.Entry&lt;String, Object&gt;&gt;</code>
+     */
     public Set<Map.Entry<String, Object>> entrySet(){
         return this.data.entrySet();
     }
 
+    /**
+     * Get the ClassType of the value with {@code Key}
+     * @param key String | The key of the item
+     * @return <code> Class&lt;?&gt;</code>
+     */
     public Class<?> getType(String key){
         return this.data.get(key).getClass();
     }

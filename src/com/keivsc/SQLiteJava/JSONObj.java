@@ -4,14 +4,22 @@ import org.json.JSONObject;
 
 import java.util.Map;
 
+/**
+ * JSONObject
+ */
 public class JSONObj extends JSONObject {
 
-    // No-argument constructor
+    /**
+     * Create a new JSONObject
+     */
     public JSONObj() {
         super();
     }
 
-    // Constructor that accepts a Map
+    /**
+     * Create a new JSONObject from a Map
+     * @param map Map&lt;?, ?&gt;
+     */
     public JSONObj(Map<?, ?> map) {
         super(map);
     }

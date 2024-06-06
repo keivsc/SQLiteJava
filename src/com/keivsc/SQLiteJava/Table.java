@@ -1,5 +1,6 @@
 package com.keivsc.SQLiteJava;
 
+import javax.xml.crypto.Data;
 import java.sql.*;
 import java.util.*;
 
@@ -8,6 +9,7 @@ import java.util.*;
  */
 class Columns{
     private final List<Map<String, Object>> fieldValues = new ArrayList<>();
+    public final List<Map<String, Object>> columnValues = new ArrayList<>();
     private static final Map<String, Class<?>> types = new HashMap<>();
     //        NULL- It is a NULL value.
 //        INTEGER- It is an integer, stored in 1, 2, 3, 4, 6, or 8 bytes depending on the value.
@@ -25,14 +27,20 @@ class Columns{
         return types.get(type);
     }
 
+
     public Columns(List<Map<String, Object>> items){
         for (Map<String, Object> item : items) {
             Map<String, Object> fieldValue = new HashMap<>();
+            Map<String, Object> columnValue = new HashMap<>();
             String name = (String) item.get("name");
             Object type = parseTypes((String) item.get("type"));
             fieldValue.put(name, type);
             fieldValue.put("primary_key", item.get("primary_key"));
+            columnValue.put("columnName", name);
+            columnValue.put("columnType", (String) item.get("type"));
+            columnValue.put("primary_key", item.get("primary_key"));
             fieldValues.add(fieldValue);
+            columnValues.add(columnValue);
         }
     };
 
@@ -51,12 +59,20 @@ class Columns{
 
 }
 
-
+/**
+ * Initialize Table Class
+ */
 public class Table {
-    private String Name;
+    public String Name;
     private Columns Column;
     private Connection conn;
-    private Map<String, Object> items = new HashMap<>();
+
+    /**
+     * Initialize the table class
+     * @param tableName String | Name of the table
+     * @param items List&lt;Map&lt;String, Object&gt;&gt; | List of items
+     * @param conn {@code Connection} | SQLite Connection
+     */
     public Table(String tableName, List<Map<String, Object>>  items, Connection conn){
 
         this.Name = tableName;
@@ -65,46 +81,66 @@ public class Table {
     };
 
     /**
+     * Get the current table columns
+     * @return <code>List&lt;Map&lt;String,Object&gt;&gt;</code> | List of keys and types of the columns
+     */
+    public List<Map<String, Object>> getColumns(){
+        return this.Column.columnValues;
+    }
+
+    /**
      * Runs a SQL Command directly with no formatting
      * @param command String | SQL Command following SQLite Formatting
-     * @throws SQLException
+     * @throws Errors.CommandException Command Exception
      */
-    public void runCommand(String command) throws SQLException {
-        Statement stmt = conn.createStatement();
-        stmt.executeUpdate(command);
+    public void runCommand(String command) throws Errors.CommandException {
+        try {
+            Statement stmt = conn.createStatement();
+            stmt.executeUpdate(command);
+        }catch (SQLException e) {
+            throw new Errors.CommandException(e.getMessage());
+        }
     }
 
     /**
      * Runs a SQL Query
      * @param query String | SQL Query following the SQLite Formatting
      * @return <code>java.sql.ResultSet</code>
-     * @throws SQLException
+     * @throws Errors.QueryException Query Exception
      */
-    public ResultSet runQuery(String query) throws SQLException {
-        Statement stmt = conn.createStatement();
-        return stmt.executeQuery(query);
+    public ResultSet runQuery(String query) throws Errors.QueryException {
+        try {
+            Statement stmt = conn.createStatement();
+            return stmt.executeQuery(query);
+        }catch (SQLException e) {
+            throw new Errors.QueryException(e.getMessage());
+        }
     }
 
 
     /**
      * Clears the entire table, This is dangerous and should almost never be used
-     * @throws SQLException
+     * @throws Errors.TableException Table Exception
      */
-    public void clearTable() throws SQLException{
-        this.runCommand("DELETE * FROM " + Name);
+    public void clearTable() throws Errors.TableException {
+        try {
+            this.runCommand("DELETE * FROM " + Name);
+        }catch (SQLException e) {
+            throw new Errors.TableException("Error Clearing Table: "+e.getMessage());
+        }
     }
 
     /**
      * Add item to the current table
      * @param items Value
-     * @throws SQLException
+     * @throws Errors.TableException Table Exception
      */
-    public void addItem(Value items) throws SQLException {
+    public void addItem(Value items) throws Errors.TableException {
         for (var entry : items.entrySet()) {
             var key = entry.getKey();
             var value = entry.getValue();
             if (items.get(key).getClass() != this.Column.getType(key)){
-                throw new SQLException("Item '" + key + "' is in the wrong Type");
+                throw new Errors.TableException("Item '" + key + "' is in the wrong Type");
             }
         }
         StringBuilder query = new StringBuilder("INSERT INTO " + Name + " VALUES(");
@@ -120,26 +156,30 @@ public class Table {
             }
         }
         query.append(")");
-        this.runCommand(query.toString());
+        try {
+            this.runCommand(query.toString());
+        }catch (SQLException e){
+            throw new Errors.TableException(e.getMessage());
+        }
     }
 
     /**
      * Edit an item in the current table, if identifer found more than one item, the operation will not go through (SQLException is thrown)
      * @param Identifier String | SQLite WHERE <code>{identifier}</code>
      * @param items Value
-     * @throws SQLException
+     * @throws Errors.TableException Table Exception
      */
-    public void editItem(String Identifier, Value items) throws SQLException {
+    public void editItem(String Identifier, Value items) throws Errors.TableException {
         for (var entry : items.entrySet()) {
             var key = entry.getKey();
             var value = entry.getValue();
             if (items.get(key) != this.Column.getType(key)){
-                throw new SQLException("Item '" + key + "' is in the wrong Type");
+                throw new Errors.TableException("Item '" + key + "' is in the wrong Type");
             }
         }
         List<Value> oldItem = this.getItems(Identifier);
         if (oldItem.size() > 1){
-            throw new SQLException("Multiple items with the same identifier '" + Identifier + "'");
+            throw new Errors.TableException("Multiple items with the same identifier '" + Identifier + "'");
         }else {
             StringBuilder query = new StringBuilder("INSERT INTO " + Name + "VALUES(");
             for (int i = 0; i < this.Column.size(); i++) {
@@ -149,7 +189,11 @@ public class Table {
                 }
             }
             query.append("WHERE " + Identifier + ")");
-            this.runCommand(query.toString());
+            try {
+                this.runCommand(query.toString());
+            }catch (SQLException e){
+                throw new Errors.TableException(e.getMessage());
+            }
         }
     }
 
@@ -157,61 +201,67 @@ public class Table {
      * Get a list of items following the identifer, Identifier can be any length
      * @param identifier String | SQLite WHERE <code>{identifier}</code>
      * @return <code>List&lt;Value&gt;</code> Returns a list of Values
-     * @throws SQLException
+     * @throws Errors.TableException Table Exception
      */
-    public List<Value> getItems(String identifier) throws SQLException {
-        StringBuilder query = new StringBuilder("SELECT * ");
-        query.append(" FROM ").append(Name).append(" WHERE "+identifier);
-        ResultSet rs = runQuery(query.toString());
-        List<Map<String, Object>> itemValues = new ArrayList<>();
-        ResultSetMetaData rsmd = rs.getMetaData();
-        int columnCount = rsmd.getColumnCount();
-        while (rs.next()){
-            Map<String, Object> item = new HashMap<>();
-            for (int i = 1; i <= columnCount; i++) {
-                String columnName = rsmd.getColumnName(i);
-                Object columnValue = rs.getObject(i);
-                item.put(columnName, columnValue);
+    public List<Value> getItems(String identifier) throws Errors.TableException {
+        try {
+            StringBuilder query = new StringBuilder("SELECT * ");
+            query.append(" FROM ").append(Name).append(" WHERE " + identifier);
+            ResultSet rs = runQuery(query.toString());
+            List<Map<String, Object>> itemValues = new ArrayList<>();
+            ResultSetMetaData rsmd = rs.getMetaData();
+            int columnCount = rsmd.getColumnCount();
+            while (rs.next()) {
+                Map<String, Object> item = new HashMap<>();
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = rsmd.getColumnName(i);
+                    Object columnValue = rs.getObject(i);
+                    item.put(columnName, columnValue);
+                }
+                itemValues.add(item);
             }
-            itemValues.add(item);
+            List<Value> fieldValues = new ArrayList<>();
+            for (Map<String, Object> item : itemValues) {
+                Value items = new Value();
+                items.ValuesInit(itemValues);
+                fieldValues.add(items);
+            }
+            return fieldValues;
+        }catch (SQLException e){
+            throw new Errors.TableException(e.getMessage());
         }
-        List<Value> fieldValues = new ArrayList<>();
-        for (Map<String, Object> item : itemValues) {
-            Value items = new Value();
-            items.ValuesInit(itemValues);
-            fieldValues.add(items);
-        }
-        return fieldValues;
     };
 
     /**
      * Get all items from the current table
      * @return <code>List&lt;Value&gt;</code> Returns a list of Values
-     * @throws SQLException
+     * @throws Errors.TableException Table Exception
      */
-    public List<Value> getAllItems() throws SQLException {
-        StringBuilder query = new StringBuilder("SELECT * ");
-        query.append(" FROM ").append(Name);
-        ResultSet rs = runQuery(query.toString());
-        List<Map<String, Object>> itemValues = new ArrayList<>();
-        ResultSetMetaData rsmd = rs.getMetaData();
-        int columnCount = rsmd.getColumnCount();
-        while (rs.next()){
-            Map<String, Object> item = new HashMap<>();
-            for (int i = 1; i <= columnCount; i++) {
-                String columnName = rsmd.getColumnName(i);
-                Object columnValue = rs.getObject(i);
-                item.put(columnName, columnValue);
+    public List<Value> getAllItems() throws Errors.TableException {
+        try {
+            ResultSet rs = runQuery("SELECT * " + " FROM " + Name);
+            List<Map<String, Object>> itemValues = new ArrayList<>();
+            ResultSetMetaData rsmd = rs.getMetaData();
+            int columnCount = rsmd.getColumnCount();
+            while (rs.next()) {
+                Map<String, Object> item = new HashMap<>();
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = rsmd.getColumnName(i);
+                    Object columnValue = rs.getObject(i);
+                    item.put(columnName, columnValue);
+                }
+                itemValues.add(item);
             }
-            itemValues.add(item);
+            List<Value> fieldValues = new ArrayList<>();
+            for (Map<String, Object> item : itemValues) {
+                Value items = new Value();
+                items.ValuesInit(itemValues);
+                fieldValues.add(items);
+            }
+            return fieldValues;
+        }catch (SQLException e){
+            throw new Errors.TableException(e.getMessage());
         }
-        List<Value> fieldValues = new ArrayList<>();
-        for (Map<String, Object> item : itemValues) {
-            Value items = new Value();
-            items.ValuesInit(itemValues);
-            fieldValues.add(items);
-        }
-        return fieldValues;
     }
 
     /**
@@ -219,62 +269,74 @@ public class Table {
      * @param identifier String | SQLite WHERE <code>{identifier}</code>
      * @param values String[] | The values you want to get
      * @return <code>List&lt;Value&gt;</code> Returns a list of Values
-     * @throws SQLException
+     * @throws Errors.TableException Table Exception
      */
-    public List<Value> getValues(String identifier, String[] values) throws SQLException {
-        StringBuilder query = new StringBuilder("SELECT ");
-        for (int i=0; i < values.length; i++) {
-            query.append(values[i]);
-            if (i != values.length-1) {
-                query.append(", ");
+    public List<Value> getValues(String identifier, String[] values) throws Errors.TableException {
+        try {
+            StringBuilder query = new StringBuilder("SELECT ");
+            for (int i = 0; i < values.length; i++) {
+                query.append(values[i]);
+                if (i != values.length - 1) {
+                    query.append(", ");
+                }
             }
-        }
-        query.append(" FROM ").append(Name).append(" WHERE "+identifier);
-        ResultSet rs = runQuery(query.toString());
-        List<Map<String, Object>> itemValues = new ArrayList<>();
-        ResultSetMetaData rsmd = rs.getMetaData();
-        int columnCount = rsmd.getColumnCount();
-        while (rs.next()){
-            Map<String, Object> item = new HashMap<>();
-            for (int i = 1; i <= columnCount; i++) {
-                String columnName = rsmd.getColumnName(i);
-                Object columnValue = rs.getObject(i);
-                item.put(columnName, columnValue);
+            query.append(" FROM ").append(Name).append(" WHERE ").append(identifier);
+            ResultSet rs = runQuery(query.toString());
+            List<Map<String, Object>> itemValues = new ArrayList<>();
+            ResultSetMetaData rsmd = rs.getMetaData();
+            int columnCount = rsmd.getColumnCount();
+            while (rs.next()) {
+                Map<String, Object> item = new HashMap<>();
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = rsmd.getColumnName(i);
+                    Object columnValue = rs.getObject(i);
+                    item.put(columnName, columnValue);
+                }
+                itemValues.add(item);
             }
-            itemValues.add(item);
+            List<Value> fieldValues = new ArrayList<>();
+            for (Map<String, Object> item : itemValues) {
+                Value items = new Value();
+                items.ValuesInit(itemValues);
+                fieldValues.add(items);
+            }
+            return fieldValues;
+        }catch (SQLException e){
+            throw new Errors.TableException(e.getMessage());
         }
-        List<Value> fieldValues = new ArrayList<>();
-        for (Map<String, Object> item : itemValues) {
-            Value items = new Value();
-            items.ValuesInit(itemValues);
-            fieldValues.add(items);
-        }
-        return fieldValues;
     }
 
     /**
      * Delete item from the table, if more than one item is found, all items will be deleted
      * @param identfier String | SQLite WHERE <code>{identifier}</code>
-     * @throws SQLException
+     * @throws Errors.TableException Table Exception
      */
-    public void deleteItem(String identfier) throws SQLException{
-        this.runCommand("DELETE FROM " + Name + " WHERE " + identfier);
+    public void deleteItem(String identfier) throws Errors.TableException {
+        try {
+            this.runCommand("DELETE FROM " + Name + " WHERE " + identfier);
+        }catch (SQLException e){
+            throw new Errors.TableException(e.getMessage());
+        }
     }
 
     /**
      * Convert the current table to a JSONObject
      * @return <code>JSONObject</code>
-     * @throws SQLException
+     * @throws Errors.TableException Table Exception
      */
-    public JSONObj toJSON() throws SQLException {
-        List<Value> allItems = this.getAllItems();
-        Map<String, Object> table = new HashMap<>();
-        List<Object> itemValues = new ArrayList<>();
-        for (Value item : allItems) {
-            itemValues.add(item.data);
+    public JSONObj toJSON() throws Errors.TableException {
+        try {
+            List<Value> allItems = this.getAllItems();
+            Map<String, Object> table = new HashMap<>();
+            List<Object> itemValues = new ArrayList<>();
+            for (Value item : allItems) {
+                itemValues.add(item.data);
+            }
+            table.put(this.Name, itemValues);
+            return new JSONObj(table);
+        }catch(SQLException e){
+            throw new Errors.TableException("Error Converting to JSON: "+e.getMessage() );
         }
-        table.put(this.Name, itemValues);
-        return new JSONObj(table);
     }
 
 }

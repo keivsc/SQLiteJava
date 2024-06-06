@@ -67,8 +67,7 @@ public class Database {
     /** Initialize the Database / Connects to the database file
      *
      * @param filename String | Name of the database file you are accessing ie "Example.db"
-     * @return <code>Database</code> | Database class
-     * @throws Errors.DatabaseException
+     * @throws Errors.DatabaseException Database Exception
      */
     public Database(String filename) throws Errors.DatabaseException {
         String dbUrl = "jdbc:sqlite:" + filename;
@@ -89,15 +88,18 @@ public class Database {
             logger.error("Could not connect to database.", e);
             throw new Errors.DatabaseException("Could not connect to database: " + e.getMessage());
         }
-        throw new Errors.DatabaseException("Could not connect to database.");
     }
 
     /**
      * Ends the database connection / use this when updating the database file.
-     * @throws SQLException
+     * @throws Errors.DatabaseException Database Exception
      */
-    public void close() throws SQLException {
-        this.conn.close();
+    public void close() throws Errors.DatabaseException {
+        try{
+            this.conn.close();
+        }catch(SQLException e) {
+            throw new Errors.DatabaseException("Could not close database connection: " + e.getMessage());
+        }
     }
 
     /**
@@ -105,7 +107,7 @@ public class Database {
      * @param tableName String | The name of the table
      * @param items String[] | The name and types of the columns
      * @return Table | Returns a Table Class
-     * @throws Errors.TableException
+     * @throws Errors.TableException Table Exception
      */
     public Table createTable(String tableName, String[] items) throws Errors.TableException {
         StringBuilder query = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (");
@@ -128,7 +130,7 @@ public class Database {
     /**
      * Connect to an existing Table
      * @param tableName String | The name of the table
-     * @return Table / null | Table class, Returns null if table is not found
+     * @return {@code Table} / {@code null} | Table class, Returns null if table is not found
      */
     public Table connectTable(String tableName) {
         try{
