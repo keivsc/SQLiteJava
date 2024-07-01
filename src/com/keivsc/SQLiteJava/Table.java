@@ -44,6 +44,7 @@ class Columns{
         }
     };
 
+
     public Object getType(String key){
         for (Map<String, Object> fieldValue : fieldValues) {
             if (fieldValue.containsKey(key)) {
@@ -97,10 +98,11 @@ public class Table {
         try {
             Statement stmt = conn.createStatement();
             stmt.executeUpdate(command);
-        }catch (SQLException e) {
+        } catch (SQLException e) {
             throw new Errors.CommandException(e.getMessage());
         }
     }
+
 
     /**
      * Runs a SQL Query
@@ -138,18 +140,25 @@ public class Table {
     public void addItem(Value items) throws Errors.TableException {
         for (var entry : items.entrySet()) {
             var key = entry.getKey();
-            var value = entry.getValue();
-            if (items.get(key).getClass() != this.Column.getType(key)){
-                throw new Errors.TableException("Item '" + key + "' is in the wrong Type");
+            if (items.get(key) == "AutoIncrement"){
+
+            }else if(items.get(key) == null){
+                throw new Errors.TableException("Item "+key+" is null");
+            }else if (items.get(key).getClass() != this.Column.getType(key)){
+                throw new Errors.TableException("Item '" + key + "' is in the wrong Type, Expected Type: "+this.Column.getType(key));
             }
         }
         StringBuilder query = new StringBuilder("INSERT INTO " + Name + " VALUES(");
         for (int i = 0; i < this.Column.size(); i++){
             Object value = items.get(items.keys.get(i));
-            if (value.getClass() == String.class || value.getClass() == Byte.class){
-                query.append("'" + value + "'");
-            }else{
-                query.append(value);
+            if (value == "AutoIncrement"){
+                query.append("NULL");
+            }else {
+                if (value.getClass() == String.class || value.getClass() == Byte.class) {
+                    query.append("'" + value + "'");
+                } else {
+                    query.append(value);
+                }
             }
             if (i != this.Column.size() - 1){
                 query.append(",");
@@ -206,7 +215,7 @@ public class Table {
     public List<Value> getItems(String identifier) throws Errors.TableException {
         try {
             StringBuilder query = new StringBuilder("SELECT * ");
-            query.append(" FROM ").append(Name).append(" WHERE " + identifier);
+            query.append(" FROM ").append(Name).append(" WHERE (" + identifier+")");
             ResultSet rs = runQuery(query.toString());
             List<Map<String, Object>> itemValues = new ArrayList<>();
             ResultSetMetaData rsmd = rs.getMetaData();
