@@ -179,26 +179,35 @@ public class Table {
      * @throws Errors.TableException Table Exception
      */
     public void editItem(String Identifier, Value items) throws Errors.TableException {
+        StringBuilder query = new StringBuilder("UPDATE " + Name + " SET ");
+        int counter = 0;
         for (var entry : items.entrySet()) {
             var key = entry.getKey();
             var value = entry.getValue();
-            if (items.get(key) != this.Column.getType(key)){
-                throw new Errors.TableException("Item '" + key + "' is in the wrong Type");
+            if(items.get(key) == null){
+                throw new Errors.TableException("Item "+key+" is null");
+            }else if (items.get(key).getClass() != this.Column.getType(key)){
+                throw new Errors.TableException("Item '" + key + "' is in the wrong Type, Expected Type: "+this.Column.getType(key));
             }
+            query.append(key).append("=");
+            if (value.getClass() == String.class || value.getClass() == Byte.class) {
+                query.append("'" + value + "'");
+            } else {
+                query.append(value);
+            }
+            if (counter != items.entrySet().size() - 1) {
+                query.append(", ");
+            }
+            counter++;
         }
         List<Value> oldItem = this.getItems(Identifier);
         if (oldItem.size() > 1){
             throw new Errors.TableException("Multiple items with the same identifier '" + Identifier + "'");
         }else {
-            StringBuilder query = new StringBuilder("INSERT INTO " + Name + "VALUES(");
-            for (int i = 0; i < this.Column.size(); i++) {
-                query.append("?");
-                if (i != this.Column.size() - 1) {
-                    query.append(",");
-                }
-            }
-            query.append("WHERE " + Identifier + ")");
+
+            query.append(" WHERE (" + Identifier + ")");
             try {
+                System.out.println(query.toString());
                 this.runCommand(query.toString());
             }catch (SQLException e){
                 throw new Errors.TableException(e.getMessage());
